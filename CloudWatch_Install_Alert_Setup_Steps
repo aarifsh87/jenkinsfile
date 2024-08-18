@@ -1,0 +1,86 @@
+Install and Configure the CloudWatch Agent on the EC2 Instance
+The AWS CloudWatch Agent needs to be installed on your EC2 instance to monitor metrics like CPU, memory, and disk usage.
+
+1.1 Install CloudWatch Agent
+* SSH into your EC2 instance:
+        # ssh -i terraform.pem ec2-user@your-ec2-public-ip
+* Install the CloudWatch Agent:
+       # sudo yum install -y amazon-cloudwatch-agent
+1.2 Configure the CloudWatch Agent
+* Create a CloudWatch Agent configuration file. You can use the following configuration to monitor CPU, memory, and disk usage:
+      # sudo vi /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  },
+  "metrics": {
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "cpu": {
+        "measurement": [
+          "cpu_usage_idle",
+          "cpu_usage_iowait",
+          "cpu_usage_user",
+          "cpu_usage_system"
+        ],
+        "metrics_collection_interval": 60,
+        "totalcpu": true
+      },
+      "disk": {
+        "measurement": [
+          "used_percent"
+        ],
+        "metrics_collection_interval": 60,
+        "resources": [
+          "/"
+        ]
+      },
+      "mem": {
+        "measurement": [
+          "mem_used_percent"
+        ],
+        "metrics_collection_interval": 60
+      }
+    }
+  }
+}
+
+2. Start the CloudWatch Agent:
+2. Set Up CloudWatch Alarm for CPU Usage
+Now, configure a CloudWatch Alarm to notify you when CPU usage exceeds 80%.
+
+2.1 Create a CloudWatch Alarm
+Go to the CloudWatch Console: Open the AWS CloudWatch console.
+
+Create an Alarm:
+
+Navigate to Alarms > Create Alarm.
+Select Metric: Choose EC2 > Per-Instance Metrics > CPUUtilization.
+Select the Instance: Choose the EC2 instance you want to monitor.
+Define Threshold: Set the condition to trigger the alarm when CPU usage exceeds 80%.
+Period: Set the evaluation period (e.g., 5 minutes).
+Data Points: Set how many consecutive periods must exceed the threshold to trigger the alarm (e.g., 2 out of 3 periods).
+Configure Actions:
+
+Notification: Choose Create new topic or select an existing SNS topic.
+Email Notifications: Enter your email address to receive alerts.
+Name the Alarm: Give it a descriptive name, e.g., High-CPU-Usage.
+
+Review and Create: Review the settings and create the alarm.
+
+2.2 Confirm Email Subscription
+If you created a new SNS topic, you’ll receive an email asking you to confirm the subscription. Confirm it to start receiving alerts.
+
+3. Verify Monitoring and Logging
+Monitor Metrics: Go back to the CloudWatch console to view the metrics being collected from your EC2 instance.
+
+Metrics: Navigate to Metrics > EC2 to see CPU, memory, and disk usage.
+Test the Alarm: You can simulate high CPU usage to test if the alarm triggers and sends an email notification.
+
+# Stress the CPU to trigger the alarm
+sudo yum install -y stress
+stress --cpu 8 --timeout 600
